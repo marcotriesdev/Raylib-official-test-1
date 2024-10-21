@@ -2,6 +2,7 @@ from raylibpy import  *
 from classes import *
 
 #COMENTARIO PARA GIT
+#COMENTARIO PARA CAMBIO PERMANENTE
 
 w_width, w_height = 800, 640
 global_scale = 4.0
