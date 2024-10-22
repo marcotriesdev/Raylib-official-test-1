@@ -2,27 +2,75 @@ from raylibpy import *
 
 class Sprite:
 
-    def __init__(self, texture, position, speed, global_scale = 1, global_gravity = 0):
+    def __init__(self, textures, position, velocity, global_scale = 1, global_gravity = 0, hp = 0, isplayer = False):
 
-        self.texture = load_texture(texture)
+        self.textures = textures
+        self.texture = load_texture(textures[0])
         self.position = position
-        self.speed = speed
+        self.velocity = velocity
+        self.normalvelocity = self.velocity
         self.bbox = Rectangle(position.x, position.y, self.texture.width*global_scale, self.texture.height*global_scale)
+        
+        self.isplayer = isplayer
         self.colliding = False
+        self.onfloor = False
         self.gravity = global_gravity
         self.scale = global_scale
         self.bbox_color = Color(255,255,255,0)
+        self.hp = hp
+        self.hurt = False
+
+        self.state = "idle"
+        self.stamina = 50
+
+
+    def update_state(self):
+
+        match self.state:
+            case "idle":
+                self.velocity = self.normalvelocity
+                self.texture = load_texture(self.textures[0])
+            case "attack":
+                self.velocity *= 0.6
+                self.texture = load_texture(self.textures[1])
+
+
+    def actions(self):
+
+        if self.isplayer:
+            if is_key_down(KEY_SPACE) and self.stamina > 0:
+                self.state = "attack"
+                self.stamina -= 2
+            else:
+                self.state = "idle"
+
+
+    def update_bbox(self):
+
+        self.bbox = Rectangle(self.position.x, self.position.y,
+                        self.texture.width*self.scale, 
+                        self.texture.height*self.scale)
+
+
+    def stamina_limit(self):
+
+        if self.stamina < 0:
+            self.stamina = 0
+
 
     def update(self):
 
-        self.bbox.x = self.position.x
-        self.bbox.y = self.position.y
+        self.actions()
+        self.update_state()
+        self.update_bbox()
+        self.stamina_limit()
 
-        self.position += self.speed
+        self.position += self.velocity
 
         if not self.colliding:
             self.position.y += self.gravity
-    
+
+
     def draw(self):
 
         if self.colliding:
@@ -38,13 +86,15 @@ class Sprite:
 
 class Spritegroup:
 
-    def __init__(self):
+    def __init__(self, type = 0):
 
         self.sprites = []  # List to store sprite instances
+        self.type = type
 
-    def add(self,sprite):
+    def add(self,elements):
 
-        self.sprites.append(sprite)
+        for element in elements:
+            self.sprites.append(element)
 
 
     def update(self):
@@ -74,5 +124,32 @@ class Spritegroup:
             for othersprite in other_group.sprites:
                 if check_collision_recs(sprite.bbox,othersprite.bbox):
                     sprite.colliding, othersprite.colliding = True, True
+                    return True
                 else:
                     sprite.colliding, othersprite.colliding = False, False
+                    return False
+
+class Controller:
+
+    def __init__(self):
+
+        self.active = True
+    
+    def input(self,velocity,player_speed,onfloor,jump_speed):
+
+        velocity.x, velocity.y = 0, 0
+        if is_key_down(KEY_W):
+            if onfloor:
+                velocity.y = -jump_speed  # Mover hacia arriba
+        if is_key_down(KEY_S):
+            if not onfloor:
+                velocity.y += player_speed  # Mover hacia abajo
+        if is_key_down(KEY_A):
+            velocity.x = -player_speed  # Mover hacia la izquierda
+        if is_key_down(KEY_D):
+            velocity.x = player_speed
+        
+
+
+        print(velocity)
+        return velocity
