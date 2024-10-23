@@ -57,18 +57,26 @@ class Sprite:
         if self.stamina < 0:
             self.stamina = 0
 
+    def collision_detect(self,group):
 
-    def update(self):
+        for e in group.sprites:
+            if check_collision_recs(self.bbox,e.bbox):
+                self.colliding
+
+    def update(self,group):
 
         self.actions()
         self.update_state()
         self.update_bbox()
         self.stamina_limit()
+        self.collision_detect(group)
+  
 
-        self.position += self.velocity
 
         if not self.colliding:
             self.position.y += self.gravity
+
+        self.position += self.velocity
 
 
     def draw(self):
@@ -91,16 +99,17 @@ class Spritegroup:
         self.sprites = []  # List to store sprite instances
         self.type = type
 
-    def add(self,elements):
+    def add(self,element):
 
-        for element in elements:
-            self.sprites.append(element)
+        #for element in elements:
+         #   self.sprites.append(element)
+        self.sprites.append(element)
 
 
-    def update(self):
+    def update(self,group):
 
         for sprite in self.sprites:
-            sprite.update()
+            sprite.update(group)
         
 
     def draw(self):
@@ -120,14 +129,19 @@ class Spritegroup:
 
     def check_collisions(self,other_group):
 
+        collision_detected = False
+
         for sprite in self.sprites:
+            sprite.colliding = False
+
             for othersprite in other_group.sprites:
                 if check_collision_recs(sprite.bbox,othersprite.bbox):
-                    sprite.colliding, othersprite.colliding = True, True
-                    return True
-                else:
-                    sprite.colliding, othersprite.colliding = False, False
-                    return False
+                    sprite.colliding = True
+                    othersprite.colliding = True
+                    collision_detected = True
+                    break
+
+        return collision_detected
 
 class Controller:
 
@@ -149,7 +163,4 @@ class Controller:
         if is_key_down(KEY_D):
             velocity.x = player_speed
         
-
-
-        print(velocity)
         return velocity
